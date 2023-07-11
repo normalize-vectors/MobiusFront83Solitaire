@@ -1,305 +1,16 @@
 import pyautogui
 import time
 import winsound
-import random
-import pyscreeze
-import multiprocessing as mp
+# import random
+# import pyscreeze
 
-pyautogui.FAILSAFE = True
-pyautogui.PAUSE = 0.05
+import interface
+from interface import Card
 
-COL_1_LEFT = 1080
-COL_1_RIGHT = 1180
-COL_2_LEFT = 1440
-COL_2_RIGHT = 1550
-COL_3_LEFT = 1800
-COL_3_RIGHT = 1900
-COL_4_LEFT = 2170
-COL_4_RIGHT = 2270
+INF = 10000
 
-card_files = ["cards\\A_R.png",
-              "cards\\A_B.png",
-              "cards\\2_R.png",
-              "cards\\2_B.png",
-              "cards\\3_R.png",
-              "cards\\3_B.png",
-              "cards\\4_R.png",
-              "cards\\4_B.png",
-              "cards\\5_R.png",
-              "cards\\5_B.png",
-              "cards\\6_R.png",
-              "cards\\6_B.png",
-              "cards\\7_R.png",
-              "cards\\7_B.png",
-              "cards\\8_R.png",
-              "cards\\8_B.png",
-              "cards\\9_R.png",
-              "cards\\9_B.png",
-              "cards\\10_R.png",
-              "cards\\10_B.png",
-              "cards\\J_R.png",
-              "cards\\J_B.png",
-              "cards\\Q_R.png",
-              "cards\\Q_B.png",
-              "cards\\K_R.png",
-              "cards\\K_B.png",]
 
-
-card_order_list = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
-
-card_order = {'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
-              '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13}
-
-card_order_reversed = {value: key for key, value in card_order.items()}
-
-card_value = {'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
-              '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10}
-
-
-def gt(A, B):
-    """Greater than comparison for cards.
-
-    A > B"""
-
-    if card_order[A] > card_order[B]:
-        return True
-    else:
-        return False
-
-
-def lt(A, B):
-    """Less than comparison for cards.
-
-    A > B"""
-
-    if card_order[A] < card_order[B]:
-        return True
-    else:
-        return False
-
-
-def in_col_1(pos):
-
-    if COL_1_LEFT < pos.left < COL_1_RIGHT:
-        return True
-    else:
-        return False
-
-
-def in_col_2(pos):
-
-    if COL_2_LEFT < pos.left < COL_2_RIGHT:
-        return True
-    else:
-        return False
-
-
-def in_col_3(pos):
-
-    if COL_3_LEFT < pos.left < COL_3_RIGHT:
-        return True
-    else:
-        return False
-
-
-def in_col_4(pos):
-
-    if COL_4_LEFT < pos.left < COL_4_RIGHT:
-        return True
-    else:
-        return False
-
-
-def in_col_any(pos):
-
-    if in_col_1(pos) or in_col_2(pos) or in_col_3(pos) or in_col_4(pos):
-        return True
-    else:
-        return False
-
-
-def is_overlapping(box1, box2):
-
-    left1, top1, width1, height1 = box1
-    left2, top2, width2, height2 = box2
-
-    right1 = left1 + width1
-    right2 = left2 + width2
-    bottom1 = top1 + height1
-    bottom2 = top2 + height2
-
-    # Check for overlap
-    if left1 < right2 and right1 > left2 and top1 < bottom2 and bottom1 > top2:
-        return True
-    else:
-        return False
-
-
-def remove_overlapping(boxes):
-
-    non_overlapping_boxes = []
-
-    for i in range(len(boxes)):
-        box = boxes[i]
-        overlap = False
-
-        for j in range(i + 1, len(boxes)):
-            other_box = boxes[j]
-
-            if is_overlapping(box[1], other_box[1]):
-                overlap = True
-                break
-
-        if not overlap:
-            non_overlapping_boxes.append(box)
-
-    return non_overlapping_boxes
-
-
-# def clean_card_list(name, red, black):
-
-#     # Convert from n, the index in card_files to the
-
-#     # name = card_order_reversed[n//2]
-
-#     combined_cards = [(name, pos) for pos in red if in_col_any(pos)] + [(name, pos) for pos in black if in_col_any(pos)]
-
-#     return remove_overlapping(combined_cards)
-
-
-def find_cards(name, screenshot):
-
-    # TODO: Optimize by cropping the screenshot
-
-    red = pyscreeze.locateAll(needleImage=f"cards\\{name}_R.png", haystackImage=screenshot, confidence=0.93)
-    black = pyscreeze.locateAll(needleImage=f"cards\\{name}_B.png", haystackImage=screenshot, confidence=0.93)
-
-    # Reorganize the cards as well as process the generators created by pyscreeze.locateAll (time intensive)
-    combined = [(name, pos) for pos in red if in_col_any(pos)] + [(name, pos) for pos in black if in_col_any(pos)]
-
-    return remove_overlapping(combined)
-
-
-def get_current_cards():
-
-    screenshot = pyscreeze.screenshot()
-
-    with mp.Pool(processes=13) as pool:
-
-        args = (('A', screenshot),
-                ('2', screenshot),
-                ('3', screenshot),
-                ('4', screenshot),
-                ('5', screenshot),
-                ('6', screenshot),
-                ('7', screenshot),
-                ('8', screenshot),
-                ('9', screenshot),
-                ('10', screenshot),
-                ('J', screenshot),
-                ('Q', screenshot),
-                ('K', screenshot))
-
-        list_of_lists = pool.starmap(find_cards, args)
-
-        cards = [item for sublist in list_of_lists for item in sublist]
-
-        # screenshot = pyscreeze.screenshot()
-
-        # # Return a list of generators for each combination of card value and card color
-        # # Every other index the color switches
-        # # Every two indices the type switches
-        # # So all_cards[0] and all_cards[1] are both generators of aces, but of different colors
-        # # The time intensive searching does not happen until the generator objects are actually iterated across
-        # all_cards = [pyscreeze.locateAll(needleImage=file, haystackImage=screenshot,
-        #                                  confidence=0.93) for file in card_files]
-
-        # with mp.Pool(processes=13) as pool:
-        #     # Take the list of generators, and send the generators to workers
-        #     # So that the time intensive part is parallelized :)
-
-        #     args = (('A', all_cards[0], all_cards[1]),
-        #             ('2', all_cards[2], all_cards[3]),
-        #             ('3', all_cards[4], all_cards[5]),
-        #             ('4', all_cards[6], all_cards[7]),
-        #             ('5', all_cards[8], all_cards[9]),
-        #             ('6', all_cards[10], all_cards[11]),
-        #             ('7', all_cards[12], all_cards[13]),
-        #             ('8', all_cards[14], all_cards[15]),
-        #             ('9', all_cards[16], all_cards[17]),
-        #             ('10', all_cards[18], all_cards[19]),
-        #             ('J', all_cards[20], all_cards[21]),
-        #             ('Q', all_cards[22], all_cards[23]),
-        #             ('K', all_cards[24], all_cards[25]))
-
-        #     cards = pool.starmap(clean_card_list, args)
-
-        # A = clean_card_list(0, 1)
-        # two = clean_card_list(2, 3)
-        # three = clean_card_list(4, 5)
-        # four = clean_card_list(6, 7)
-        # five = clean_card_list(8, 9)
-        # six = clean_card_list(10, 11)
-        # seven = clean_card_list(12, 13)
-        # eight = clean_card_list(14, 15)
-        # nine = clean_card_list(16, 17)
-        # ten = clean_card_list(18, 19)
-        # J = clean_card_list(20, 21)
-        # Q = clean_card_list(22, 23)
-        # K = clean_card_list(24, 25)
-
-        # def fix(short_name, var_name):
-        #     return list(zip([f'{short_name}']*len(var_name), var_name))
-
-        # cards = fix('A', A) + fix('2', two) + fix('3', three) + fix('4', four) + fix('5', five) + fix('6', six) + \
-        #     fix('7', seven) + fix('8', eight) + fix('9', nine) + fix('10', ten) + fix('J', J) + fix('Q', Q) + fix('K', K)
-
-    return cards
-
-
-def get_playable_cards(cards):
-
-    # Find the lowest y value card in each column
-
-    col1, col2, col3, col4, = None, None, None, None
-
-    for number, box in cards:
-
-        if in_col_1(box):
-
-            if not col1:
-                col1 = (number, box)
-            elif box.top > col1[1].top:
-                col1 = (number, box)
-
-        elif in_col_2(box):
-
-            if not col2:
-                col2 = (number, box)
-            elif box.top > col2[1].top:
-                col2 = (number, box)
-
-        elif in_col_3(box):
-
-            if not col3:
-                col3 = (number, box)
-            elif box.top > col3[1].top:
-                col3 = (number, box)
-
-        elif in_col_4(box):
-
-            if not col4:
-                col4 = (number, box)
-            elif box.top > col4[1].top:
-                col4 = (number, box)
-
-        else:
-            raise 'Big Ouchie'
-
-    return [col1, col2, col3, col4]
-
-
-def score(cards):
+def score_single(stack):
     """Find the total score value of the given stack of cards.
 
     - The first card played to the stack is a jack (+2)
@@ -310,15 +21,15 @@ def score(cards):
 
     """
 
-    # if len(cards) == 0:
-    #     return 0
+    if len(stack) == 0:
+        return 0
 
     score = 0  # Total score generated by this stack
 
     stack_total = 0  # Total value of the cards
 
     # Scoring from the first card being a jack
-    if cards[0][0] == 'J':
+    if stack[0].name == 'J':
         score += 2
 
     # The length of sets is stored as a list so that changes in card type can be properly handled
@@ -329,12 +40,11 @@ def score(cards):
     runs = [[]]
 
     # Look through the stack of cards in the order they were placed
-    for i in range(len(cards)):
+    for i in range(len(stack)):
 
-        current_card = cards[i][0]
-        current_value = card_value[current_card]
+        current_card = stack[i]
 
-        stack_total += current_value
+        stack_total += current_card.value
 
         # Stack total is exactly 15 or 31 (+2)
         if stack_total == 15 or stack_total == 31:
@@ -345,21 +55,21 @@ def score(cards):
         # Calculations to determine sets
         if i > 0:
 
-            previous_card = cards[i - 1][0]
+            previous_card = stack[i - 1]
 
-            if previous_card == current_card:
+            if previous_card.name == current_card.name:
                 set_counts[-1] += 1
             else:
                 set_counts.append(1)
 
-        # The card is not contiguous with the current run
+        # Says if the card is not contiguous with the current run
         disjointed = True
 
-        # The current card is already in the run
+        # Says if the current card is already in the run
         duplicate = False
 
         for card in runs[-1]:
-            if (current_value == card_value[card] + 1) or (current_value == card_value[card] - 1):
+            if (current_card.order == card.order + 1) or (current_card.order == card.order - 1):
                 disjointed = False
                 break
 
@@ -391,91 +101,218 @@ def score(cards):
 
     return score
 
-# def random_card(cards):
 
-#     playable = get_playable_cards(cards)
+def score_multiple(stacks):
+    """"Calculate the score for a list of cards representing all cards that have been played in all stacks."""
 
-#     # For now, chose a card at random
-#     i = random.randint(0, 3)
+    stack = []
 
-#     return playable[i]
+    total_score = 0
+
+    sub_total = 0
+
+    # Attempt to split the list of cards into stacks, then sum the score of each stack
+    for card in stacks:
+
+        if sub_total + card.value > 31:
+            total_score += score_single(stack)
+            sub_total = 0
+            stack = []
+
+        sub_total += card.value
+        stack.append(card)
+
+    total_score += score_single(stack)
+
+    return total_score
 
 
-def greedy(cards, stack):
-    """Attempt the move that gets the most immediate score."""
-    # basic greedy implementation:
-    # create a function that evaluates the increase in score after a particular move
-    # then, choose the playable card that increases score the most
+def partial_stack(stacks):
+    """Split a list of all cards that have been played into the one remaining active stack.
 
-    # TODO: keep track of which cards are currently in the stack
-    # score() call below should append the playable card to the current stack
-    # keep track of the next stack button
+    Also returns the value of that stack."""
 
-    playable = get_playable_cards(cards)
+    stack = []
+    sub_total = 0
 
-    best_choice = None
-    best_score = 0
+    # Attempt to split the list of cards into stacks, then sum the score of each stack
+    for card in stacks:
 
-    # Find which of the playable cards, if any, will increase score
-    for card in playable:
-        score_but_not_the_function = score(stack+[card])
+        if sub_total + card.value > 31:
+            sub_total = 0
+            stack = []
 
-        if score_but_not_the_function > best_score:
-            best_choice = card
-            best_score = score_but_not_the_function
+        sub_total += card.value
+        stack.append(card)
 
-    # None of the available choices will increase the score, so pick randomly.
-    if best_score == 0:
-        if None in playable:
-            raise NotImplementedError
-        else:
-            return random.choice(playable)
+    return stack, sub_total
+
+
+def simulate_move(all_cards, played_cards, card_to_play):
+    """"Calculate the """
+
+    new_cards = all_cards.copy()
+    new_played = played_cards.copy()
+
+    new_cards.remove(card_to_play)
+
+    new_played.append(card_to_play)
+
+    return new_cards, new_played
+
+
+def get_playable_cards(cards, stacks):
+    """Returns a list of cards that can be played. Only returns cards that would not push the stack over a value of 31."""
+
+    # Find the lowest y value card in each column
+
+    col1, col2, col3, col4, = None, None, None, None
+
+    def lowest(card, col, num):
+
+        if card.column == num:
+            if not col:
+
+                return card
+            elif card.y > col.y:
+                return card
+            else:
+                return col
+
+    for card in cards:
+
+        match card.column:
+
+            case 1:
+                col1 = lowest(card, col1, 1)
+            case 2:
+                col2 = lowest(card, col2, 2)
+            case 3:
+                col3 = lowest(card, col3, 3)
+            case 4:
+                col4 = lowest(card, col4, 4)
+
+    bottom_cards = [col for col in [col1, col2, col3, col4] if col]
+
+    stack, value = partial_stack(stacks)
+
+    # Exclude cards that would push the stack over a value of 31
+    playable_cards = []
+    for card in bottom_cards:
+
+        if value + card.value <= 31:
+            playable_cards.append(card)
+
+    breakpoint()
+
+    # If all cards make the stack too big, return all bottom cards (start a new stack)
+    if len(playable_cards) == 0:
+        return bottom_cards
+
     else:
-        return best_choice
+        return playable_cards
 
 
-# if __name__ == '__main__':
-#     stack = [('A', 0), ('2', 0), ('3', 0), ('2', 0), ('J', 0), ('3', 0)]
-#     print(score(stack))
+def search(depth, all_cards, played_cards, playable_card):
+    """Returns the final score of the best possible path that could result from playing the given card."""
+
+    # Return the total score accumulated when the end of a path has been reached
+    if depth == 0:
+        return score_multiple(played_cards)
+
+    best_score = -INF
+
+    new_all, new_played = simulate_move(all_cards, played_cards, playable_card)
+
+    new_playable_cards = get_playable_cards(new_all, new_played)
+
+    # Stop the search if we have run out of cards
+    if len(new_all) == 0:
+        return score_multiple(played_cards)
+
+    for card in new_playable_cards:
+
+        # The list of cards that have been played for the next depth
+        this_played = played_cards + [card]
+
+        # Score that results from this child node
+        result = search(depth=depth-1, all_cards=new_all, played_cards=this_played, playable_card=card)
+
+        best_score = max(best_score, result)
+
+    return best_score
+
+
+def find_move(all_cards, played_cards):
+    """Find and return the best card to play."""
+
+    playable_cards = get_playable_cards(all_cards, played_cards)
+
+    best_card = None
+    best_score = -2*INF
+
+    for card in playable_cards:
+
+        score = search(depth=8, all_cards=all_cards, played_cards=played_cards, playable_card=card)
+
+        if score > best_score:
+            best_card = card
+            best_score = score
+
+    # if best_score == -INF:
+    #     print("Unable to find a scoring path.")
+    # else:
+    #     print(f"Found a path worth {best_score}")
+
+    return best_card
+
 
 if __name__ == '__main__':
+
+    prev_all_cards = []
+
+    played_cards = []
+
+    i = 0
+
     time.sleep(1)
 
-    winsound.Beep(200, 100)
-    cards = get_current_cards()
     winsound.Beep(500, 100)
 
-    card_count = len(cards)
-    print(card_count)
+    while i <= 52:
 
+        all_cards = interface.get_all_cards_greyscale()
 
-# if __name__ == '__main__':
-#     time.sleep(2)
+        if prev_all_cards == all_cards:
+            # It may have misclicked
+            # Remove the last item from the list of played cards, since it was not actually placed
+            played_cards.pop(-1)
 
-#     stack = []
+        if len(all_cards) < 1:
+            break
 
-#     i = 1
-#     while i <= 52:
-#         winsound.Beep(200, 100)
+        card = find_move(all_cards, played_cards)
 
-#         next_button = pyautogui.locateCenterOnScreen("cards\\next_stack.png", confidence=0.95)
+        all_cards, played_cards = simulate_move(all_cards, played_cards, card)
 
-#         if next_button:
-#             pyautogui.moveTo(next_button)
-#             pyautogui.mouseDown()
-#             pyautogui.mouseUp()
-#             stack = []
+        # pyautogui.alert(text=card, title='Continue?', button='OK')
 
-#         cards = get_current_cards()
-#         winsound.Beep(500, 100)
+        print(f"Attempting to play card: {card}")
+        pyautogui.moveTo(x=card.x, y=card.y)
+        pyautogui.mouseDown()
+        pyautogui.mouseUp()
 
-#         # card_count = len(cards)
+        time.sleep(0.2)
 
-#         card_to_play = greedy(cards, stack)
-#         stack.append(card_to_play)
+        next_button = pyautogui.locateCenterOnScreen("cards\\next_stack.png", confidence=0.95)
 
-#         pyautogui.moveTo(x=card_to_play[1].left, y=card_to_play[1].top)
-#         pyautogui.mouseDown()
-#         pyautogui.mouseUp()
+        if next_button:
+            pyautogui.moveTo(next_button)
+            pyautogui.mouseDown()
+            pyautogui.mouseUp()
 
-#         i += 1
+        time.sleep(2)
+
+        prev_all_cards = all_cards
+
+        i += 1
