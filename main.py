@@ -1,11 +1,7 @@
-import pyautogui
-import time
-import winsound
-# import random
-# import pyscreeze
-
 import interface
-from interface import Card
+import time
+import pyautogui
+
 
 INF = 10000
 
@@ -149,12 +145,14 @@ def partial_stack(stacks):
 
 
 def simulate_move(all_cards, played_cards, card_to_play):
-    """"Calculate the """
+    """"""
 
-    new_cards = all_cards.copy()
+    # new_cards = all_cards.copy()
     new_played = played_cards.copy()
 
-    new_cards.remove(card_to_play)
+    new_cards = [card for card in all_cards if card is not card_to_play]
+
+    # new_cards.remove(card_to_play)
 
     new_played.append(card_to_play)
 
@@ -203,7 +201,7 @@ def get_playable_cards(cards, stacks):
         if value + card.value <= 31:
             playable_cards.append(card)
 
-    breakpoint()
+    # breakpoint()
 
     # If all cards make the stack too big, return all bottom cards (start a new stack)
     if len(playable_cards) == 0:
@@ -216,11 +214,14 @@ def get_playable_cards(cards, stacks):
 def search(depth, all_cards, played_cards, playable_card):
     """Returns the final score of the best possible path that could result from playing the given card."""
 
+    # breakpoint()
+
     # Return the total score accumulated when the end of a path has been reached
     if depth == 0:
-        return score_multiple(played_cards)
+        return score_multiple(played_cards), []
 
     best_score = -INF
+    best_path = []
 
     new_all, new_played = simulate_move(all_cards, played_cards, playable_card)
 
@@ -228,19 +229,21 @@ def search(depth, all_cards, played_cards, playable_card):
 
     # Stop the search if we have run out of cards
     if len(new_all) == 0:
-        return score_multiple(played_cards)
+        return score_multiple(played_cards), []
 
     for card in new_playable_cards:
 
         # The list of cards that have been played for the next depth
-        this_played = played_cards + [card]
+        this_played = new_played
 
         # Score that results from this child node
-        result = search(depth=depth-1, all_cards=new_all, played_cards=this_played, playable_card=card)
+        result, path = search(depth=depth-1, all_cards=new_all, played_cards=this_played, playable_card=card)
 
-        best_score = max(best_score, result)
+        if result > best_score:
+            best_score = result
+            best_path = [card] + path
 
-    return best_score
+    return best_score, best_path
 
 
 def find_move(all_cards, played_cards):
@@ -250,21 +253,23 @@ def find_move(all_cards, played_cards):
 
     best_card = None
     best_score = -2*INF
+    best_path = None
 
     for card in playable_cards:
 
-        score = search(depth=8, all_cards=all_cards, played_cards=played_cards, playable_card=card)
+        score, path = search(depth=6, all_cards=all_cards, played_cards=played_cards, playable_card=card)
 
         if score > best_score:
             best_card = card
             best_score = score
+            best_path = [card] + path
 
-    # if best_score == -INF:
-    #     print("Unable to find a scoring path.")
+    if best_score == -INF:
+        print("Unable to find a scoring path.")
     # else:
     #     print(f"Found a path worth {best_score}")
 
-    return best_card
+    return best_card, best_path
 
 
 if __name__ == '__main__':
@@ -277,42 +282,51 @@ if __name__ == '__main__':
 
     time.sleep(1)
 
-    winsound.Beep(500, 100)
+    all_cards = interface.get_all_cards_greyscale()
+
+    pyautogui.moveTo(x=100, y=100)
+    pyautogui.mouseDown()
+    pyautogui.mouseUp()
 
     while i <= 52:
-
-        all_cards = interface.get_all_cards_greyscale()
 
         if prev_all_cards == all_cards:
             # It may have misclicked
             # Remove the last item from the list of played cards, since it was not actually placed
+            breakpoint()
+            print("### Misclick detected")
             played_cards.pop(-1)
 
         if len(all_cards) < 1:
             break
 
-        card = find_move(all_cards, played_cards)
+        card, path = find_move(all_cards, played_cards)
+
+        print(f"Attempting to play card: {card}")
+        # print('Cards I want to play:')
+        # for j, cd in enumerate(path):
+        #     print(f"{j}: {cd}")
+
+        prev_all_cards = all_cards
 
         all_cards, played_cards = simulate_move(all_cards, played_cards, card)
 
         # pyautogui.alert(text=card, title='Continue?', button='OK')
 
-        print(f"Attempting to play card: {card}")
+        time.sleep(0.7)
+
         pyautogui.moveTo(x=card.x, y=card.y)
         pyautogui.mouseDown()
         pyautogui.mouseUp()
 
-        time.sleep(0.2)
+        time.sleep(0.7)
 
+        # TODO: Crop for screenshot
         next_button = pyautogui.locateCenterOnScreen("cards\\next_stack.png", confidence=0.95)
 
         if next_button:
             pyautogui.moveTo(next_button)
             pyautogui.mouseDown()
             pyautogui.mouseUp()
-
-        time.sleep(2)
-
-        prev_all_cards = all_cards
 
         i += 1
