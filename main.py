@@ -2,7 +2,6 @@ import interface
 import time
 import pyautogui
 
-
 INF = 10000
 
 
@@ -14,7 +13,6 @@ def score_single(stack):
     - Stack total is exactly 31 (+2)
     - Set of 2, 3, or 4 of the same card (+2/+6/+12)
     - Run of 3 to 7 cards in any order (+3 to +7)
-
     """
 
     if len(stack) == 0:
@@ -145,15 +143,11 @@ def partial_stack(stacks):
 
 
 def simulate_move(all_cards, played_cards, card_to_play):
-    """"""
-
-    # new_cards = all_cards.copy()
-    new_played = played_cards.copy()
+    """Update the lists of cards to reflect a card being played."""
 
     new_cards = [card for card in all_cards if card is not card_to_play]
 
-    # new_cards.remove(card_to_play)
-
+    new_played = played_cards.copy()
     new_played.append(card_to_play)
 
     return new_cards, new_played
@@ -274,59 +268,44 @@ def find_move(all_cards, played_cards):
 
 if __name__ == '__main__':
 
-    prev_all_cards = []
-
     played_cards = []
-
-    i = 0
 
     time.sleep(1)
 
+    # Read the screen and find all card locations
     all_cards = interface.get_all_cards_greyscale()
 
+    # Ready the cursor
     pyautogui.moveTo(x=100, y=100)
     pyautogui.mouseDown()
     pyautogui.mouseUp()
 
-    while i <= 52:
-
-        if prev_all_cards == all_cards:
-            # It may have misclicked
-            # Remove the last item from the list of played cards, since it was not actually placed
-            breakpoint()
-            print("### Misclick detected")
-            played_cards.pop(-1)
+    for i in range(52):
 
         if len(all_cards) < 1:
             break
 
         card, path = find_move(all_cards, played_cards)
 
-        print(f"Attempting to play card: {card}")
-        # print('Cards I want to play:')
-        # for j, cd in enumerate(path):
-        #     print(f"{j}: {cd}")
-
-        prev_all_cards = all_cards
-
         all_cards, played_cards = simulate_move(all_cards, played_cards, card)
 
-        # pyautogui.alert(text=card, title='Continue?', button='OK')
-
-        time.sleep(0.7)
+        print(f"Attempting to play card: {card}")
 
         pyautogui.moveTo(x=card.x, y=card.y)
         pyautogui.mouseDown()
         pyautogui.mouseUp()
 
-        time.sleep(0.7)
+        time.sleep(0.07)
 
-        # TODO: Crop for screenshot
-        next_button = pyautogui.locateCenterOnScreen("cards\\next_stack.png", confidence=0.95)
+        next_button = pyautogui.locateCenterOnScreen(
+            "cards\\next_stack.png",
+            confidence=0.95,
+            region=(635, 430, 350, 1000))
 
         if next_button:
             pyautogui.moveTo(next_button)
             pyautogui.mouseDown()
             pyautogui.mouseUp()
+            time.sleep(0.07)
 
-        i += 1
+    print("All cards played.")

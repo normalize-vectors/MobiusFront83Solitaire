@@ -7,6 +7,7 @@ from PIL import ImageEnhance
 from PIL import ImageFont
 from PIL import ImageDraw
 
+
 COL_1_LEFT = 1085
 COL_1_RIGHT = 1200
 COL_2_LEFT = 1450
@@ -175,8 +176,6 @@ def remove_overlapping(cards):
 def find_cards_greyscale(name, screenshot):
     """Find all cards of a given face."""
 
-    # TODO: Optimize by cropping the screenshot
-
     # Creates generators
     greyscale = pyscreeze.locateAll(
         needleImage=f"cards\\{name}.png",
@@ -191,6 +190,8 @@ def find_cards_greyscale(name, screenshot):
 
 
 def preprocess_image(image):
+    """Convert the image to greyscale."""
+
     # Convert image to grayscale
     image = image.convert("L")
 
@@ -213,7 +214,7 @@ def get_all_cards_greyscale():
 
     with mp.Pool(processes=13) as pool:
 
-        # The order of this tuple seems to affect which way duplicate cards are resolved
+        # The order of this tuple seems to affect which way overlapping cards are resolved
         # Q is a very false-positive prone character, so it is done first so that other characters may overwrite it
         args = (('Q', screenshot),
                 ('9', screenshot),
@@ -245,65 +246,6 @@ def get_all_cards_greyscale():
     screenshot.save('processed_labelled.png')
 
     return cards
-
-
-# def find_cards(name, screenshot):
-
-#     # TODO: Optimize by cropping the screenshot?
-
-#     red = pyscreeze.locateAll(
-#         needleImage=f"cards\\{name}_R.png",
-#         haystackImage=screenshot,
-#         confidence=0.89,
-#         grayscale=False)
-
-#     black = pyscreeze.locateAll(
-#         needleImage=f"cards\\{name}_B.png",
-#         haystackImage=screenshot,
-#         confidence=0.89,
-#         grayscale=False)
-
-#     # greyscale = pyscreeze.locateAll(
-#     #     needleImage=f"cards\\{name}.png",
-#     #     haystackImage=screenshot,
-#     #     confidence=0.8,
-#     #     grayscale=True)
-
-#     # Reorganize the cards as well as process the generators created by pyscreeze.locateAll (time intensive)
-#     # combined = [Card(name, box, 'greyscale') for box in black]
-#     combined = [Card(name, box, 'red') for box in red] + [Card(name, box, 'black') for box in black]
-
-#     combined = [card for card in remove_overlapping(combined)]
-
-#     return combined
-
-
-# def get_all_cards():
-#     """Takes a screenshot to get the postion of all cards on the screen. Returns a list of Card objects."""
-
-#     screenshot = pyscreeze.screenshot()
-
-#     with mp.Pool(processes=13) as pool:
-
-#         args = (('A', screenshot),
-#                 ('2', screenshot),
-#                 ('3', screenshot),
-#                 ('4', screenshot),
-#                 ('5', screenshot),
-#                 ('6', screenshot),
-#                 ('7', screenshot),
-#                 ('8', screenshot),
-#                 ('9', screenshot),
-#                 ('10', screenshot),
-#                 ('J', screenshot),
-#                 ('Q', screenshot),
-#                 ('K', screenshot))
-
-#         list_of_lists = pool.starmap(find_cards, args)
-
-#         cards = [item for sublist in list_of_lists for item in sublist]
-
-#     return cards
 
 
 if __name__ == "__main__":
